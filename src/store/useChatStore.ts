@@ -10,8 +10,11 @@ interface ChatStore {
   deleteSession: (id: string) => void;
   selectSession: (id: string) => void;
   addMessage: (sessionId: string, message: Omit<Message, 'id' | 'timestamp'>) => void;
-  updateMessage: (sessionId: string, messageId: string, content: string) => void;
+  updateMessage: (sessionId: string, messageId: string, content: string, thinkingContent?: string) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
+  deleteMessagePair: (sessionId: string, messageId: string) => void;
+  deleteLastMessage: (sessionId: string) => void;
+  getLastUserMessage: (sessionId: string) => Message | null;
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -83,7 +86,7 @@ export const useChatStore = create<ChatStore>()(
         });
       },
 
-      updateMessage: (sessionId, messageId, content) => {
+      updateMessage: (sessionId, messageId, content, thinkingContent) => {
         set((state) => {
           const sessionIndex = state.sessions.findIndex((s) => s.id === sessionId);
           if (sessionIndex === -1) return state;
@@ -93,7 +96,12 @@ export const useChatStore = create<ChatStore>()(
           if (msgIndex === -1) return state;
 
           const updatedMessages = [...session.messages];
-          updatedMessages[msgIndex] = { ...updatedMessages[msgIndex], content };
+          const updatedMessage = { 
+            ...updatedMessages[msgIndex], 
+            content,
+            ...(thinkingContent !== undefined && { thinkingContent })
+          };
+          updatedMessages[msgIndex] = updatedMessage;
 
           const updatedSession = { ...session, messages: updatedMessages, updatedAt: Date.now() };
           const newSessions = [...state.sessions];
@@ -112,7 +120,90 @@ export const useChatStore = create<ChatStore>()(
           newSessions[sessionIndex] = { ...newSessions[sessionIndex], title };
           return { sessions: newSessions };
         });
-      }
+      },
+
+      deleteMessagePair: (sessionId, messageId) => {
+        set((state) => {
+          const sessionIndex = state.sessions.findIndex((s) => s.id === sessionId);
+          if (sessionIndex === -1) return state;
+
+          const session = state.sessions[sessionIndex];
+          const msgIndex = session.messages.findIndex((m) => m.id === messageId);
+          if (msgIndex === -1) return state;
+
+          const message = session.messages[msgIndex];
+          let messagesToDelete = [messageId];
+
+          // 找到配对的消息
+          if (message.role === 'user') {
+            // 如果是用户消息，删除它和下一条 AI 消息
+            const nextMessage = session.messages[msgIndex + 1];
+            if (nextMessage && nextMessage.role === 'assistant') {
+              messagesToDelete.push(nextMessage.id);
+            }
+          } else if (message.role === 'assistant') {
+            // 如果是 AI 消息，删除它和上一条用户消息
+            const prevMessage = session.messages[msgIndex - 1];
+            if (prevMessage && prevMessage.role === 'user') {
+              messagesToDelete = [prevMessage.id, messageId];
+            }
+          }
+
+          // 删除配对的消息
+          const updatedMessages = session.messages.filter(
+            (m) => !messagesToDelete.includes(m.id)
+          );
+
+          const updatedSession = {
+            ...session,
+            messages: updatedMessages,
+            updatedAt: Date.now(),
+          };
+
+          const newSessions = [...state.sessions];
+          newSessions[sessionIndex] = updatedSession;
+
+          return { sessions: newSessions };
+        });
+      },
+
+      deleteLastMessage: (sessionId) => {
+        set((state) => {
+          const sessionIndex = state.sessions.findIndex((s) => s.id === sessionId);
+          if (sessionIndex === -1) return state;
+
+          const session = state.sessions[sessionIndex];
+          if (session.messages.length === 0) return state;
+
+          // 删除最后一条消息
+          const updatedMessages = session.messages.slice(0, -1);
+
+          const updatedSession = {
+            ...session,
+            messages: updatedMessages,
+            updatedAt: Date.now(),
+          };
+
+          const newSessions = [...state.sessions];
+          newSessions[sessionIndex] = updatedSession;
+
+          return { sessions: newSessions };
+        });
+      },
+
+      getLastUserMessage: (sessionId: string): Message | null => {
+        const state = useChatStore.getState();
+        const session = state.sessions.find((s: Session) => s.id === sessionId);
+        if (!session) return null;
+
+        // 从后往前找第一条用户消息
+        for (let i = session.messages.length - 1; i >= 0; i--) {
+          if (session.messages[i].role === 'user') {
+            return session.messages[i];
+          }
+        }
+        return null;
+      },
     }),
     {
       name: 'lightflow-chat-storage',

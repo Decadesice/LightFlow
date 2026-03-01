@@ -1,82 +1,68 @@
 
 # ✨ LightFlow
 
-超轻量、秒启动的Windows本地大模型对话工具，专为「省Prompt、避限流、低成本」打造，对接Coding Plan即可畅享先进大模型的连续对话与多模态能力 🚀
+基于 React + Tauri 的本地大模型对话工具，支持多模态文件对话与简历生成功能。
 
-## 🎯 核心初衷
+## 🚀 功能特性
 
-- 嫌弃Cursor/Trae等工具耗Prompt？
-- 字节/Kimi/智谱高级模型总限流、卡顿？
-- 想低成本使用先进大模型，又要本地运行、轻量不占资源？
+| 特性 | 详情 |
+|------|------|
+| 💬 多模型对话 | 支持配置多个 API 模型，灵活切换 |
+| 📄 文件解析 | 支持 PDF/Word/Excel/图片/文本等多种格式 |
+| 📝 简历生成 | 内置简历模板，AI 辅助优化，一页纸排版 |
+| 🔒 安全加密 | API Key 使用 Windows DPAPI 加密存储 |
+| 🎨 现代 UI | 基于 Tailwind CSS 的简洁美观界面 |
 
-LightFlow 完美解决以上问题：基于Rust+egui打造，单文件<15MB，毫秒级启动，本地解析文件+加密存储API Key，全程不占多余内存/硬盘，省💰又省心！
+## 🛠️ 技术栈
 
-## ✨ 核心亮点
+- **前端**: React 19 + TypeScript + Vite
+- **桌面框架**: Tauri 2
+- **状态管理**: Zustand
+- **样式**: Tailwind CSS
+- **Markdown**: React Markdown + Remark GFM
 
-| 特性          | 详情                                                                             |
-| ------------- | -------------------------------------------------------------------------------- |
-| 🚀 极致轻量   | 单文件<15MB，内存峰值<100MB，秒开无等待，无后台进程                              |
-| 📄 多格式兼容 | 支持PDF/Office(docx/xlsx/pptx)/图片/TXT/MD/CSV本地解析，仅提取核心内容更省Prompt |
-| 🔒 安全加密   | API地址/模型/Key全自定义，Key通过Windows原生DPAPI本地加密，无明文泄露风险        |
-| 🎨 极简UI     | 现代化简洁设计，流式响应丝滑，交互无冗余，适配Win10/11视觉风格                   |
-| 💻 灵活安装   | 支持自定义安装路径（如D:\LightFlow），标准MSI安装包，兼容便携模式                |
-| 📝 持久化存储 | 对话历史按日期本地保存，退出后数据不丢失，启动懒加载不影响速度                   |
+## 📦 安装运行
 
-## 🛠 技术栈
+```bash
+# 安装依赖
+npm install
 
-- 主框架：Rust + egui（全原生、无运行时依赖）
-- 网络：reqwest + tokio（流式SSE/WebSocket响应）
-- 加密：Windows DPAPI（API Key本地加密）
-- 打包：WiX Toolset（标准MSI安装包）
+# 开发模式
+npm run tauri dev
 
-## 📥 安装使用
+# 构建
+npm run tauri build
+```
 
-### 1. 下载安装
+## 📝 简历生成功能
 
-- 下载仓库中 `LightFlow-x64.msi`安装包；
-- 运行安装包，支持自定义安装路径（默认 `C:\ProgramFiles\LightFlow`，可改D盘等非系统盘）；
-- 安装完成后，桌面/开始菜单可直接启动。
+- 内置技术岗、通用岗、应届生三类简历模板
+- AI 辅助优化简历内容
+- 自动一页纸排版（上下边距 0.6cm，左右 0.8cm）
+- 支持导出为 Markdown、HTML、Word 格式
 
-### 2. 首次配置
+## 📂 项目结构
 
-1. 启动后自动弹出API配置弹窗，填写：
-   - API地址（默认填充类OpenAI格式通用地址）；
-   - 模型名称（如 `doubao-seed-2.0-code`，支持下拉选择）；
-   - API Key（掩码显示，勾选「记住配置」自动加密存储）；
-2. 支持增删多个模型配置，自由切换，全程本地存储无云端传输。
+```
+src/
+├── components/          # React 组件
+│   ├── ChatArea.tsx    # 聊天区域
+│   ├── FilePreview.tsx # 文件预览
+│   ├── ResumeGenerator.tsx # 简历生成器
+│   ├── SettingsDialog.tsx # 设置对话框
+│   └── Sidebar.tsx     # 侧边栏
+├── lib/                 # 工具库
+│   ├── crypto.ts       # 加密工具
+│   ├── fileProcessor.ts # 文件处理
+│   └── llm.ts          # LLM API 调用
+└── store/              # 状态管理
+    ├── useChatStore.ts
+    ├── useResumeStore.ts
+    ├── useSettingsStore.ts
+    └── types.ts
+```
 
-### 3. 开始使用
+## 🛡️ 许可证
 
-- **文件对话**：拖放PDF/Office/图片/文本文件到界面，自动本地解析后发起对话；
-- **连续对话**：支持模型最大上下文长度，流式输出逐token渲染，无卡顿；
-- **历史记录**：对话历史按日期保存在 `%APPDATA%\LightFlow\history`，可随时查看。
+MIT License
 
-## 📂 目录说明
-
-| 路径                                | 作用                                   |
-| ----------------------------------- | -------------------------------------- |
-| `%APPDATA%\LightFlow\config.json` | 加密存储API配置，仅当前用户可读写      |
-| `%APPDATA%\LightFlow\history`     | 对话历史（JSON Lines格式，按日期分卷） |
-| `%APPDATA%\LightFlow\cache`       | 临时缓存，退出自动清理                 |
-
-## ⚡ 性能指标
-
-- 启动速度：<100ms（毫秒级）
-- 单文件体积：<15MB
-- 运行内存峰值：<100MB
-- 安装包体积：≈15.5MB（MSI格式）
-- UI渲染CPU占用：<5%
-
-## 🚨 安全说明
-
-1. 所有文件解析、API配置加密/解密均在本地完成，无任何云端传输；
-2. API Key通过Windows DPAPI加密存储，仅当前用户可解密，无泄露风险；
-3. 程序禁用内存转储，避免内存中提取敏感信息。
-
-## 🛡 许可证
-
-MIT License - 自用、修改、分发均可，无需授权，欢迎Star🌟支持！
-
----
-
-Made with ❤️ for lightweight & efficient local LLM interaction
