@@ -31,5 +31,6 @@ build
 
 # Project specific
 .trae
+.claude
 image
 API_CONFIG_GUIDE.md
